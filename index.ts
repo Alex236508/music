@@ -31,7 +31,9 @@ async function startServer() {
   });
 
   try {
-    const usePort = Number(process.env.MUSIC_PORT) || 2010;
+    const usePort =
+      Number(process.env.PORT || process.env.MUSIC_PORT) || 2010;
+    
     await fastify.listen({ port: usePort, host: "0.0.0.0" });
 
     const gb = (v: string | undefined, dflt: number) => (Number(v) || dflt) * 1024 ** 3;
