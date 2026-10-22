@@ -243,7 +243,7 @@
     </nav>
     <div class="side-label">Playlists</div>
     <div class="playlist-empty">Create your first playlist</div>
-    <button class="playlist-create" type="button">＋&nbsp; New Playlist</button>
+    <button class="playlist-create" id="newPlaylistBtn" type="button">＋&nbsp; New Playlist</button>
     <div class="side-bottom">▦&nbsp;&nbsp; Shortcuts</div>
   </aside>
   <main class="main">
@@ -269,7 +269,10 @@
         <div class="status">Start typing to search.</div>
       </section>
       <section class="view" id="libraryView" aria-label="Your library" hidden>
-        <div class="status">Your library is ready for you to explore.</div>
+        <div class="status">Under construction — Your Library will be ready soon.</div>
+      </section>
+      <section class="view" id="playlistsView" aria-label="New playlist" hidden>
+        <div class="status">Under construction — playlists will be ready soon.</div>
       </section>
     </div>
     <footer class="player-bar">
@@ -290,6 +293,7 @@ const player = document.getElementById('player');
 const browseView = document.getElementById('browseView');
 const searchView = document.getElementById('searchView');
 const libraryView = document.getElementById('libraryView');
+const playlistsView = document.getElementById('playlistsView');
 const pageTitle = document.getElementById('pageTitle');
 const nowPlayingTitle = document.getElementById('nowPlayingTitle');
 const nowPlayingArtist = document.getElementById('nowPlayingArtist');
@@ -306,7 +310,8 @@ function showView(name) {
   browseView.hidden = name !== 'browse';
   searchView.hidden = name !== 'search';
   libraryView.hidden = name !== 'library';
-  pageTitle.textContent = name === 'library' ? 'Your Library' : name[0].toUpperCase() + name.slice(1);
+  playlistsView.hidden = name !== 'playlists';
+  pageTitle.textContent = name === 'library' ? 'Your Library' : name === 'playlists' ? 'New Playlist' : name[0].toUpperCase() + name.slice(1);
   document.querySelectorAll('.nav button[data-view]').forEach((button) => {
     const active = button.dataset.view === name;
     button.classList.toggle('active', active);
@@ -487,6 +492,7 @@ document.getElementById('searchForm').addEventListener('submit', (event) => {
 document.querySelectorAll('.nav button[data-view]').forEach((button) => {
   button.addEventListener('click', () => showView(button.dataset.view));
 });
+document.getElementById('newPlaylistBtn').addEventListener('click', () => showView('playlists'));
 player.addEventListener('error', () => {
   nowPlayingArtist.textContent = 'Could not play this track. Check the server log.';
 });
