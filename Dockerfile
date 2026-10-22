@@ -2,14 +2,25 @@ FROM oven/bun:1
 
 WORKDIR /app
 
-# Install Python, pip, and ffmpeg for yt-dlp and audio processing
+# Install Python, pip, FFmpeg, and tools needed for Deno installation
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-pip ffmpeg \
+    && apt-get install -y --no-install-recommends \
+       python3 python3-pip ffmpeg curl unzip ca-certificates \
     && pip3 install --break-system-packages --no-cache-dir -U "yt-dlp[default]" \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-    
-RUN yt-dlp --version && python3 --version && bun --version
+
+# Install Deno, a supported JavaScript runtime for yt-dlp
+RUN curl -fsSL https://deno.land/install.sh | sh
+
+ENV PATH="/root/.deno/bin:${PATH}"
+
+# Verify the actual installed tools during the image build
+RUN yt-dlp --version \
+    && python3 --version \
+    && bun --version \
+    && deno --version
+
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile || bun install
 
