@@ -57,7 +57,7 @@ const MUSIC_TIMEOUT_MS = 4000;
 // stream proxy) takes an absolute URL. Point them back at our own listener
 // rather than at the public hostname: a loopback hop costs nothing and keeps
 // working when the deploy sits behind Caddy under a name we don't know here.
-const SELF_ORIGIN = `http://127.0.0.1:${Number(process.env.MUSIC_PORT) || 2010}`;
+const SELF_ORIGIN = `http://127.0.0.1:${Number(process.env.PORT || process.env.MUSIC_PORT) || 2010}`;
 
 // Tidal only supplies search results and metadata: its own playback resolves
 // to 30-second previews, so every stream is resolved by ytm.
