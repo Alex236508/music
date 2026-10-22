@@ -1,5 +1,16 @@
-node_modules
-dist
-data
+# Secrets and local environment configuration
 .env
+.env.*
+!.env.example
+
+# YouTube authentication cookies
 cookies.txt
+cookies*.txt
+
+# Local downloaded audio and cache
+data/
+*.tmp.*
+
+# Dependencies and build output
+node_modules/
+dist/
