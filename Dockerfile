@@ -5,10 +5,11 @@ WORKDIR /app
 # Install Python, pip, and ffmpeg for yt-dlp and audio processing
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-pip ffmpeg \
-    && pip3 install --break-system-packages --no-cache-dir -U yt-dlp \
+    && pip3 install --break-system-packages --no-cache-dir -U "yt-dlp[default]" \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
+    
+RUN yt-dlp --version && python3 --version && bun --version
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile || bun install
 
