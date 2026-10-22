@@ -19,11 +19,13 @@ import crypto from "node:crypto";
 import { ConcurrencyGate } from "./concurrencyGate";
 import { r2Get, r2PutFile } from "./r2";
 import { LruCache } from "./lruCache";
+import path from "node:path";
 
 // There is no built-in YouTube Music host: whoever runs this sets YTM_BASE to
 // the origin to search and download from (https://music.youtube.com, or a
 // mirror of it). Unset, the source is off. Read per call, not at load: another
 // test file may import this module first.
+const COOKIES_PATH = process.env.YTM_COOKIES_FILE || path.join(process.cwd(), "cookies.txt");
 export function ytmBase(): string | null {
   const raw = (process.env.YTM_BASE || "").trim().replace(/\/+$/, "");
   return /^https?:\/\//i.test(raw) ? raw : null;
@@ -891,7 +893,7 @@ function downloadWithYtDlp(id: string): Promise<string> {
       const tag = crypto.randomBytes(4).toString("hex");
       const target = path.join(CACHE_DIR, `${id}.${tag}.tmp.%(ext)s`);
 
-      try {
+    try {
         await runYtDlp(binary, [
           "-f",
           "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best",
@@ -901,6 +903,10 @@ function downloadWithYtDlp(id: string): Promise<string> {
           YT_DLP_CACHE_DIR,
           "--no-warnings",
           "--quiet",
+          // ---> ADD THESE LINES <---
+          "--cookies",
+          COOKIES_PATH,
+          // -------------------------
           ...extra,
         ]);
       } catch (e) {
