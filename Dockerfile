@@ -17,6 +17,7 @@ ENV PATH="/root/.deno/bin:${PATH}"
 
 # Verify the actual installed tools during the image build
 RUN yt-dlp --version \
+    && python3 -m pip show yt-dlp yt-dlp-ejs \
     && python3 --version \
     && bun --version \
     && deno --version
