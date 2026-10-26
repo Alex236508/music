@@ -24,7 +24,6 @@ import path from "node:path";
 // the origin to search and download from (https://music.youtube.com, or a
 // mirror of it). Unset, the source is off. Read per call, not at load: another
 // test file may import this module first.
-const COOKIES_PATH = process.env.YTM_COOKIES_FILE || path.join(process.cwd(), "cookies.txt");
 export function ytmBase(): string | null {
   const raw = (process.env.YTM_BASE || "").trim().replace(/\/+$/, "");
   return /^https?:\/\//i.test(raw) ? raw : null;
@@ -757,6 +756,26 @@ function runYtDlp(binary: string, args: string[]): Promise<void> {
   });
 }
 
+async function ytDlpCookieArgs(): Promise<string[]> {
+  const configuredPath = process.env.YTM_COOKIES_FILE?.trim();
+  const cookiePath = configuredPath || path.join(process.cwd(), "cookies.txt");
+  try {
+    await fsp.access(cookiePath, fsConstants.R_OK);
+    return ["--cookies", cookiePath];
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? error.code
+        : undefined;
+    if (!configuredPath && code === "ENOENT") return [];
+    throw new Error(
+      configuredPath
+        ? `YTM_COOKIES_FILE is not readable: ${cookiePath}`
+        : `Could not read YouTube cookies at ${cookiePath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
 /** Remove any partial output from a failed attempt. yt-dlp leaves `.part`
  * files (and the target itself) behind when it is killed mid-download. */
 async function cleanupTemp(id: string, tag: string): Promise<void> {
@@ -883,6 +902,7 @@ function downloadWithYtDlp(id: string): Promise<string> {
       );
 
     await fsp.mkdir(CACHE_DIR, { recursive: true });
+    const cookieArgs = await ytDlpCookieArgs();
 
     const failures: string[] = [];
     for (const [client, extra] of ytDlpAttempts(id)) {
@@ -902,10 +922,7 @@ function downloadWithYtDlp(id: string): Promise<string> {
           YT_DLP_CACHE_DIR,
           "--no-warnings",
           "--quiet",
-          // ---> ADD THESE LINES <---
-          "--cookies",
-          COOKIES_PATH,
-          // -------------------------
+          ...cookieArgs,
           ...extra,
         ]);
       } catch (e) {

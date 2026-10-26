@@ -32,4 +32,4 @@ ENV YTM_BASE=https://music.youtube.com
 
 EXPOSE 2010
 
-CMD ["/bin/sh", "-c", "cp \"$YTM_COOKIES_FILE\" /tmp/ytm-cookies.txt && chmod 600 /tmp/ytm-cookies.txt && export YTM_COOKIES_FILE=/tmp/ytm-cookies.txt && exec bun start"]
+CMD ["/bin/sh", "-c", "set -e; if [ -n \"$YTM_COOKIES_FILE\" ]; then if [ ! -r \"$YTM_COOKIES_FILE\" ]; then echo 'YTM_COOKIES_FILE is set but not readable' >&2; exit 1; fi; cp \"$YTM_COOKIES_FILE\" /tmp/ytm-cookies.txt; chmod 600 /tmp/ytm-cookies.txt; export YTM_COOKIES_FILE=/tmp/ytm-cookies.txt; fi; exec bun start"]

@@ -37,46 +37,71 @@ test("a track kept in the store is pulled to disk instead of downloaded", async 
   }
 });
 
-test("with an Invidious instance set, downloads go through latest_version first, then the plugin", async () => {
-  const id = "invidiousT1";
-  const log = path.join(dir, "argv.log");
-  const fake = path.join(dir, "fake-yt-dlp");
-  // Logs the URL (last arg); only the plugin run "downloads", so every attempt shows.
-  await fsp.writeFile(
-    fake,
-    `#!/bin/sh
-for a; do url=$a; done
-echo "$url" >> "$FAKE_YTDLP_LOG"
+test.skipIf(process.platform === "win32")(
+  "with an Invidious instance set, downloads go through latest_version first, then the plugin",
+  async () => {
+    const id = "invidiousT1";
+    const log = path.join(dir, "argv.log");
+    const fake = path.join(dir, "fake-yt-dlp");
+    const cookies = path.join(dir, "cookies.txt");
+    await fsp.writeFile(cookies, "# Netscape HTTP Cookie File\n");
+    // Logs the URL and cookie path; only the plugin run "downloads".
+    await fsp.writeFile(
+      fake,
+      `#!/bin/sh
+for a; do
+  if [ "$a" = "--cookies" ]; then read_cookie=1; continue; fi
+  if [ "$read_cookie" = "1" ]; then cookiefile=$a; read_cookie=0; fi
+  url=$a
+done
+echo "$url|$cookiefile" >> "$FAKE_YTDLP_LOG"
 case "$url" in invidious:*) ;; *) echo "ERROR: HTTP Error 403: Forbidden" >&2; exit 1;; esac
 while [ $# -gt 0 ]; do [ "$1" = -o ] && out=$2; shift; done
 printf audio > "$(echo "$out" | sed 's/%(ext)s/m4a/')"
 `,
-    { mode: 0o755 },
-  );
-  process.env.YT_DLP_PATH = fake;
-  process.env.YTM_INVIDIOUS_INSTANCE = "inv.test";
-  process.env.FAKE_YTDLP_LOG = log;
-  const { get, putFile } = mod.ytmStore;
-  const puts: string[][] = [];
-  mod.ytmStore.get = async () => null;
-  mod.ytmStore.putFile = async (key, _file, type) => void puts.push([key, type]);
-  const file = path.join(mod.ytmCacheDir(), `${id}.m4a`);
-  try {
-    expect(await mod.ytmAudioFile(id)).toBe(file);
-    expect((await fsp.readFile(log, "utf8")).trim().split("\n")).toEqual([
-      `https://inv.test/latest_version?id=${id}&itag=140&local=true`,
-      `https://inv.test/latest_version?id=${id}&itag=251&local=true`,
-      `invidious:${id}`,
-    ]);
-    expect(puts).toEqual([[`ytm/${id}`, "audio/mp4"]]);
-    expect((await fsp.readdir(mod.ytmCacheDir())).filter((n) => n.startsWith(`${id}.`) && n.includes(".tmp"))).toEqual([]);
-  } finally {
-    for (const k of ["YT_DLP_PATH", "YTM_INVIDIOUS_INSTANCE", "FAKE_YTDLP_LOG"]) delete process.env[k];
-    mod.ytmStore.get = get;
-    mod.ytmStore.putFile = putFile;
-    await fsp.rm(file, { force: true });
-  }
-});
+      { mode: 0o755 },
+    );
+    process.env.YT_DLP_PATH = fake;
+    process.env.YTM_INVIDIOUS_INSTANCE = "inv.test";
+    process.env.YTM_COOKIES_FILE = cookies;
+    process.env.FAKE_YTDLP_LOG = log;
+    const { get, putFile } = mod.ytmStore;
+    const puts: string[][] = [];
+    mod.ytmStore.get = async () => null;
+    mod.ytmStore.putFile = async (key, _file, type) => void puts.push([key, type]);
+    const file = path.join(mod.ytmCacheDir(), `${id}.m4a`);
+    try {
+      expect(await mod.ytmAudioFile(id)).toBe(file);
+      expect((await fsp.readFile(log, "utf8")).trim().split("\n")).toEqual([
+        `https://inv.test/latest_version?id=${id}&itag=140&local=true|${cookies}`,
+        `https://inv.test/latest_version?id=${id}&itag=251&local=true|${cookies}`,
+        `invidious:${id}|${cookies}`,
+      ]);
+      expect(puts).toEqual([[`ytm/${id}`, "audio/mp4"]]);
+      expect(
+        (await fsp.readdir(mod.ytmCacheDir())).filter(
+          (n) => n.startsWith(`${id}.`) && n.includes(".tmp"),
+        ),
+      ).toEqual([]);
+
+      process.env.YTM_COOKIES_FILE = path.join(dir, "missing-cookies.txt");
+      await expect(mod.ytmAudioFile("missingC001")).rejects.toThrow(
+        "YTM_COOKIES_FILE is not readable",
+      );
+    } finally {
+      for (const k of [
+        "YT_DLP_PATH",
+        "YTM_INVIDIOUS_INSTANCE",
+        "YTM_COOKIES_FILE",
+        "FAKE_YTDLP_LOG",
+      ])
+        delete process.env[k];
+      mod.ytmStore.get = get;
+      mod.ytmStore.putFile = putFile;
+      await fsp.rm(file, { force: true });
+    }
+  },
+);
 
 // Minimal innertube songs-shelf row: title run with the video id, then
 // "Artist • Album • m:ss".

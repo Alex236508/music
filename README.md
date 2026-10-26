@@ -36,6 +36,22 @@ you need [bun](https://bun.sh) and [yt-dlp](https://github.com/yt-dlp/yt-dlp) in
 
 if it can't find yt-dlp, set `YT_DLP_PATH` to where it lives (`which yt-dlp`). if youtube blocks your server, set `YTM_INVIDIOUS_INSTANCE` to an invidious host. the rest of `.env.example` is optional.
 
+### YouTube cookies on Render
+
+YouTube may refuse downloads from a server with a bot check. Export a fresh
+Netscape-format cookie file for a YouTube account you control, add it to Render
+as a **Secret File** (for example, `/etc/secrets/cookies.txt`), and set
+`YTM_COOKIES_FILE` to that exact path. Do not commit the file or add it as a
+normal environment variable. The container copies the mounted secret to a
+private temporary path before starting; if the configured file is missing or
+unreadable, startup fails with an explicit error.
+
+Cookie credentials expire and YouTube can still reject them. If Render reports
+`Sign in to confirm you’re not a bot`, replace the Secret File with a newly
+exported cookie file and redeploy. A 502 in that case means yt-dlp did not
+obtain audio; the browser's unsupported-audio error is a consequence of the
+failed stream, not an audio codec issue.
+
 ## routes
 - `GET /api/music/search?q=&limit=&source=`
 - `GET /api/music/stream?id=&source=&title=&artist=&duration=` (ranged audio)
