@@ -13,7 +13,6 @@
 // local range request that can't expire mid-play.
 
 import { promises as fsp, constants as fsConstants } from "node:fs";
-import path from "node:path";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
 import { ConcurrencyGate } from "./concurrencyGate";
