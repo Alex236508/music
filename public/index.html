@@ -5,6 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#080c14">
+    <link rel="icon" href="assets/favicon.ico" />
+    <title>Music &mdash; Echo-Net</title>
     <style>
         :root {
             color-scheme: dark;
@@ -1424,7 +1426,7 @@
             if (!player.loop && index >= 0 && index < playbackQueue.length - 1) playQueueTrack(index + 1);
         });
         player.addEventListener('error', () => {
-            nowPlayingArtist.textContent = 'Could not play this track. Check the server log.';
+            nowPlayingArtist.textContent = 'Could not play this track. Try again later.';
         });
 
         setPlaybackQueue([]);
